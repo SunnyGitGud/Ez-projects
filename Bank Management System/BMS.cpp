@@ -1,15 +1,31 @@
 #include <iostream>
+#include <fstream>
+#include <map>
 #include <string>
+#include <conio.h>
+#include <functional> 
+#include <iomanip>
 using namespace std;
 
-class BankAccount
-{
+
+string hashPassword(const string& password) {
+    hash<string> hasher;
+    size_t hashed = hasher(password);
+    return to_string(hashed);
+}
+
+
+class BankAccount {
 private:
-    string name;
+    string username;
     double balance;
+    string password;
 public:
-    BankAccount(const string& accountName, double& initialBalance)
-                    :name(accountName), balance(initialBalance){}
+    BankAccount() : username(""), password(""), balance(0.0) {}
+
+
+    BankAccount(const string& user, const string& pass, double initialBalance)
+        : username(user), balance(initialBalance), password(pass) {}
 
     void deposite(double amount){
         if (amount > 0){
@@ -18,63 +34,139 @@ public:
     }    
     
     void withdraw(double amount){
-        if ( amount <= balance){
+        if (amount <= balance){
             balance -= amount;
         } else {
-            cout << "there is not enough balance" << endl;
+            cout << "There is not enough balance" << endl;
         }
     }
 
     void display(){
-        cout << "Account: " << 
-        name << "\nBalance: $"<<
-         balance << endl;
+        cout << "Username: " << username << "\nBalance: $" <<
+        fixed << setprecision(2) << balance << endl;
     }
+
+    string getUsername() const { return username; }
+    string getPassword() const { return password; }
+    double getBalance() const { return balance; }
 };
 
-int main(){
-    string name;
-    double initialdeposit;
+int main() {
+     map<string, BankAccount> users;
+    
+    ifstream inFile("accounts.txt");
+        if (inFile.is_open()) {
+            string user, pass;
+            double bal;
+            while (inFile >> user >> pass >> bal) {
+                BankAccount acc(user, pass, bal);
+                users[user] = acc;
+            }
+            inFile.close();
+            cout << "Accounts loaded from file.\n";
+        } else {
+            cout << "No saved accounts found.\n";
+        }
 
-    cout << "Enter your name: ";
-    getline(cin, name);
-    cout << "Enter initial deposit: ";
-    cin >> initialdeposit;
 
-    BankAccount account(name, initialdeposit);
     int choice;
-    double amount;
 
-    do
-    {
-    cout << "\n1. Deposit" << endl;
-    cout << "\n2. Withdraw" << endl;
-    cout << "\n3. Display Account" << endl;
-    cout << "\n4. exit" << endl;
-    cout << "Enter choice: ";
-    cin >> choice;
-         switch (choice)
-        {
-        case 1: 
-            cout << "Enter deposit Amount: ";
-            cin >> amount;
-            account.deposite(amount);
-            break;
+    do{
+        cout << "\n1. Register\n2. Log In\n3. Exit\nChoose option: ";
+        cin>> choice;
+        cin.ignore();
 
-        case 2: 
-            cout << "Enter Withdrawal Amount: ";
-            cin >> amount;
-            account.withdraw(amount);
-            break;
+        if(choice == 1){
+            //registration
+            string user, pass;
+            double deposit;
 
-        case 3:
-            account.display();
-            break;
-        
-        default:
-                cout << "Invalid choice." << endl;       
-            break;
-        } 
-    }while (choice != 4);
-    return 1;
+            cout << "Enter username: ";
+            getline(cin, user);
+
+            if (users.find(user) != users.end() ) {
+                cout << "Username already exists!\n";
+                continue;
+            }
+
+            cout << "enter password: ";
+            getline(cin, pass);
+
+            string hashedPass = hashPassword(pass);
+
+            cout << "Enter initial deposit: ";
+            cin >> deposit;
+            cin.ignore();
+
+            users[user] = BankAccount(user, hashedPass, deposit);
+            cout << "account created successfuly. \n";
+        }
+    else if (choice == 2){
+        string user, pass;
+        cout << "Enter username: ";
+        getline(cin,user);
+
+        auto it = users.find(user);
+        if (it == users.end()) {
+            cout << "User not found. \n";
+            continue;
+        }
+
+        cout << "Enter password: ";
+        getline(cin, pass);
+
+        string hashedPass = hashPassword(pass);
+
+        if (it->second.getPassword() != hashedPass){
+            cout << "Incorrect password. \n";
+            continue;
+        }
+
+
+
+        cout << "login successful!\n";
+
+       int action;
+            double amount;
+            do {
+                cout << "\n1. Deposit\n2. Withdraw\n3. Display\n4. Logout\nChoose option: ";
+                cin >> action;
+
+                switch (action) {
+                    case 1:
+                        cout << "Amount to deposit: ";
+                        cin >> amount;
+                        it->second.deposite(amount);
+                        break;
+                    case 2:
+                        cout << "Amount to withdraw: ";
+                        cin >> amount;
+                        it->second.withdraw(amount);
+                        break;
+                    case 3:
+                        it->second.display();
+                        break;
+                    case 4:
+                        cout << "Logging out...\n";
+                        break;
+                    default:
+                        cout << "Invalid choice.\n";
+                }
+            } while (action != 4); 
+        }   
+    } while (choice != 3);
+    
+
+    ofstream outFile("accounts.txt");
+    for (const auto& pair : users) {
+        outFile << pair.second.getUsername() << " "
+                << pair.second.getPassword() << " "
+                << pair.second.getBalance() << endl;
+    }
+    outFile.close();
+
+    cout << "Account saved to file.\n";
+
+
+    return 0;
 }
