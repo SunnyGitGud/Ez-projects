@@ -19,3 +19,6 @@ Control Flow – Using do-while loops and switch-case for menu handling.
 Data Persistence – Saving user data across program runs via a file.
 
 Validation – Checking for duplicate usernames and incorrect passwords.
+
+update:
+added File Encrytion with ceaser cypher

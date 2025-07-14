@@ -7,6 +7,28 @@
 #include <iomanip>
 using namespace std;
 
+void encryptFile(const string &inputFilePath, const string &outputFilePath, int key) {
+    ifstream inputFile(inputFilePath, ios::binary);
+    ofstream outputFile(outputFilePath, ios::binary);
+    char ch;
+    while (inputFile.get(ch)) {
+        outputFile.put(ch + key);
+    }
+    inputFile.close();
+    outputFile.close();
+}
+
+void decryptFile(const string &inputFilePath, const string &outputFilePath, int key) {
+    ifstream inputFile(inputFilePath, ios::binary);
+    ofstream outputFile(outputFilePath, ios::binary);
+    char ch;
+    while (inputFile.get(ch)) {
+        outputFile.put(ch - key);
+    }
+    inputFile.close();
+    outputFile.close();
+}
+
 
 string hashPassword(const string& password) {
     hash<string> hasher;
@@ -54,7 +76,9 @@ public:
 int main() {
      map<string, BankAccount> users;
     
-    ifstream inFile("accounts.txt");
+    decryptFile("accounts.dat", "temp_accounts.txt", 3);
+
+    ifstream inFile("temp_accounts.txt");
         if (inFile.is_open()) {
             string user, pass;
             double bal;
@@ -64,6 +88,7 @@ int main() {
             }
             inFile.close();
             cout << "Accounts loaded from file.\n";
+            remove("temp_accounts.txt");
         } else {
             cout << "No saved accounts found.\n";
         }
@@ -157,13 +182,17 @@ int main() {
     } while (choice != 3);
     
 
-    ofstream outFile("accounts.txt");
+   ofstream outFile("temp_accounts.txt");
     for (const auto& pair : users) {
         outFile << pair.second.getUsername() << " "
                 << pair.second.getPassword() << " "
                 << pair.second.getBalance() << endl;
     }
     outFile.close();
+
+    encryptFile("temp_accounts.txt", "accounts.dat", 3);
+    remove("temp_accounts.txt");
+
 
     cout << "Account saved to file.\n";
 
